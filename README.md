@@ -1,51 +1,127 @@
 # jev-dspy
 
-Type-safe question-answering API built on [DSPy](https://dspy.ai), backed by the Amazee AI LiteLLM gateway.
+A type-safe, question-answering API built on [DSPy](https://dspy.ai) and backed by the
+Amazee AI LiteLLM gateway (OpenAI-compatible).
 
-## Env vars
+Send a situation plus a set of typed questions, and get back a JSON decision for each —
+parsed to the type you asked for, with a confidence score.
 
-| Variable | Purpose | Default |
-|---|---|---|
-| `AMAZEEAI_BASE_URL` | LiteLLM base URL (OpenAI-compatible) | — (required) |
-| `AMAZEEAI_API_KEY` | LiteLLM token | — (required) |
-| `AMAZEEAI_MODEL` | Model name | `claude-4-5-haiku` |
+```json
+{
+  "is_urgent":   {"value": true, "confidence": 0.92},
+  "severity":    {"value": 4,    "confidence": 0.88},
+  "next_action": {"value": "Escalate to payment support immediately", "confidence": 0.9}
+}
+```
 
-## Run
+## Quickstart
 
 ```bash
+# Requires: AMAZEEAI_BASE_URL and AMAZEEAI_API_KEY in your environment
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-Interactive docs at `http://localhost:8000/docs`.
+The server is now at `http://localhost:8000`, with interactive docs at
+[`http://localhost:8000/docs`](http://localhost:8000/docs).
+
+## Configuration
+
+| Variable            | Purpose                                  | Default              |
+|---------------------|------------------------------------------|----------------------|
+| `AMAZEEAI_BASE_URL` | LiteLLM base URL (OpenAI-compatible)     | — *(required)*       |
+| `AMAZEEAI_API_KEY`  | LiteLLM token                            | — *(required)*       |
+| `AMAZEEAI_MODEL`    | Model name on the gateway                | `claude-4-5-haiku`   |
+
+The app fails fast at request time with a `502` if the gateway is unreachable or the
+credentials are rejected.
 
 ## API
 
-`POST /api/v1/decisions`
+### `POST /api/v1/decisions`
+
+**Request**
+
+| Field       | Type                          | Description                                    |
+|-------------|-------------------------------|------------------------------------------------|
+| `state`     | `string`                      | The situation to analyze                       |
+| `questions` | `map[string, Question]`       | Each question gets one typed answer            |
+
+Each `Question` has:
+
+| Field          | Type     | Description                          |
+|----------------|----------|--------------------------------------|
+| `type`         | `string` | `boolean` \| `integer` \| `number` \| `string` |
+| `instructions` | `string` | Natural-language question for the model |
+
+**Example**
 
 ```bash
-curl http://localhost:8000/api/v1/decisions \
+curl -s http://localhost:8000/api/v1/decisions \
   -H "Content-Type: application/json" \
   -d '{
     "state": "My payouts have failed for three days and nobody has replied.",
     "questions": {
-      "is_urgent": {"type": "boolean", "instructions": "Does this need urgent attention?"}
+      "is_urgent":   {"type": "boolean", "instructions": "Does this need urgent attention?"},
+      "severity":    {"type": "integer", "instructions": "Severity from 1 (minor) to 5 (critical)"},
+      "next_action": {"type": "string",  "instructions": "The single best next action, max 8 words"}
     }
-  }'
+  }' | python3 -m json.tool
 ```
 
-Response (JSON only):
+**Response** — JSON only, one entry per question, preserving your question names:
 
 ```json
-{"is_urgent": {"value": true, "confidence": 0.92}}
+{
+  "is_urgent":   {"value": true, "confidence": 0.92},
+  "severity":    {"value": 4,    "confidence": 0.88},
+  "next_action": {"value": "Escalate to payment support immediately with documentation", "confidence": 0.9}
+}
 ```
 
-- `type`: `boolean` | `integer` | `number` | `string` — answers are parsed to that type; anything else is a 422.
-- Question names must be valid identifiers (they become DSPy signature fields).
-- Every answer carries a `confidence` between 0.0 and 1.0.
-- LLM failures surface as `502` with a JSON detail.
+- `value` is coerced to the requested type by DSPy's typed-output parsing — a `boolean`
+  question comes back as a real JSON boolean, `integer` as a real number, and so on.
+- `confidence` is the model's self-reported certainty, clamped to `[0.0, 1.0]`.
 
-## Tests
+### Rules & errors
+
+| Status | Meaning                                                                 |
+|--------|-------------------------------------------------------------------------|
+| `422`  | Invalid request: unknown `type`, missing fields, or a question name that is not a valid identifier (names become DSPy signature fields, so `is_urgent` is fine but `my question` is not) |
+| `502`  | The LLM call failed (gateway down, bad credentials) or returned an incomplete/unparseable answer |
+
+### `GET /`
+
+Service metadata: `{"service": "jev-dspy", "model": "claude-4-5-haiku"}`.
+
+## How it works
+
+Each request compiles into a dynamic [DSPy signature](https://dspy.ai/learn/programming/signatures/):
+every question becomes a typed output field plus a paired `_confidence` field. DSPy handles
+prompt construction, output parsing and type coercion; the app just maps the parsed
+prediction back onto your original question names.
+
+```
+POST /api/v1/decisions
+        │
+        ▼
+build_signature(questions)   →  state -> is_urgent: bool, is_urgent_confidence: float, ...
+        │
+        ▼
+dspy.Predict(sig)(state)     →  typed, parsed prediction (claude-4-5-haiku via LiteLLM)
+        │
+        ▼
+{name: {value, confidence}}  →  JSON response
+```
+
+## Development
 
 ```bash
-uv run python test_main.py
+uv run python test_main.py   # offline self-check: signature building + validation
+```
+
+Project layout:
+
+```
+app/main.py      # FastAPI app, DSPy wiring, the endpoint
+test_main.py     # self-checks (no LLM calls)
 ```
