@@ -6,7 +6,7 @@ import os
 import dspy
 from fastapi import FastAPI, HTTPException
 from typing import Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 MODEL = os.environ.get("LLM_MODEL", "claude-4-5-haiku")
 PY_TYPES: dict[str, type] = {"boolean": bool, "integer": int, "number": float, "string": str}
@@ -19,7 +19,7 @@ class Question(BaseModel):
 
 class DecisionRequest(BaseModel):
     state: str
-    questions: dict[str, Question]
+    questions: dict[str, Question] = Field(min_length=1)
 
 
 class Answer(BaseModel):

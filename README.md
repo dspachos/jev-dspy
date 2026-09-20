@@ -137,8 +137,10 @@ introduces breaking changes to consumers without prior notice.
 ## Development
 
 ```bash
-uv run python test_main.py   # offline self-check: signature building + validation
+uv run pytest              # test suite: validation, typing, confidence, error paths (LLM mocked)
 ```
+
+The tests mock the LLM, so they run offline and fast.
 
 Project layout:
 
