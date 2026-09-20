@@ -1,5 +1,8 @@
 # jev-dspy
 
+> [!WARNING]
+> Experimental project — under active development, API and behavior may change without notice.
+
 A type-safe, question-answering API built on [DSPy](https://dspy.ai) and backed by any
 OpenAI-compatible LLM gateway.
 
