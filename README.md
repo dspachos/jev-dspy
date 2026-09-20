@@ -1,7 +1,7 @@
 # jev-dspy
 
-A type-safe, question-answering API built on [DSPy](https://dspy.ai) and backed by the
-Amazee AI LiteLLM gateway (OpenAI-compatible).
+A type-safe, question-answering API built on [DSPy](https://dspy.ai) and backed by any
+OpenAI-compatible LLM gateway.
 
 Send a situation plus a set of typed questions, and get back a JSON decision for each —
 parsed to the type you asked for, with a confidence score.
@@ -17,7 +17,7 @@ parsed to the type you asked for, with a confidence score.
 ## Quickstart
 
 ```bash
-# Requires: AMAZEEAI_BASE_URL and AMAZEEAI_API_KEY in your environment
+# Requires: LLM_BASE_URL and LLM_API_KEY in your environment
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
@@ -26,11 +26,11 @@ The server is now at `http://localhost:8000`, with interactive docs at
 
 ## Configuration
 
-| Variable            | Purpose                                  | Default              |
-|---------------------|------------------------------------------|----------------------|
-| `AMAZEEAI_BASE_URL` | LiteLLM base URL (OpenAI-compatible)     | — *(required)*       |
-| `AMAZEEAI_API_KEY`  | LiteLLM token                            | — *(required)*       |
-| `AMAZEEAI_MODEL`    | Model name on the gateway                | `claude-4-5-haiku`   |
+| Variable       | Purpose                                  | Default              |
+|----------------|------------------------------------------|----------------------|
+| `LLM_BASE_URL` | Gateway base URL (OpenAI-compatible)     | — *(required)*       |
+| `LLM_API_KEY`  | Gateway API token                        | — *(required)*       |
+| `LLM_MODEL`    | Model name on the gateway                | `claude-4-5-haiku`   |
 
 The app fails fast at request time with a `502` if the gateway is unreachable or the
 credentials are rejected.

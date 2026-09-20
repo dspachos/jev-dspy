@@ -1,4 +1,4 @@
-"""jev-dspy: DSPy-powered, type-safe decision API backed by the Amazee AI LiteLLM gateway."""
+"""jev-dspy: DSPy-powered, type-safe decision API backed by an OpenAI-compatible LLM gateway."""
 
 import keyword
 import os
@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from typing import Literal
 from pydantic import BaseModel
 
-MODEL = os.environ.get("AMAZEEAI_MODEL", "claude-4-5-haiku")
+MODEL = os.environ.get("LLM_MODEL", "claude-4-5-haiku")
 PY_TYPES: dict[str, type] = {"boolean": bool, "integer": int, "number": float, "string": str}
 
 
@@ -29,8 +29,8 @@ class Answer(BaseModel):
 
 lm = dspy.LM(
     f"openai/{MODEL}",
-    api_base=os.environ.get("AMAZEEAI_BASE_URL"),
-    api_key=os.environ.get("AMAZEEAI_API_KEY"),
+    api_base=os.environ.get("LLM_BASE_URL"),
+    api_key=os.environ.get("LLM_API_KEY"),
     temperature=0.0,
 )
 dspy.configure(lm=lm)
