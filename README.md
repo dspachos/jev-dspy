@@ -116,6 +116,24 @@ dspy.Predict(sig)(state)     →  typed, parsed prediction (claude-4-5-haiku via
 {name: {value, confidence}}  →  JSON response
 ```
 
+## Roadmap
+
+The long-term objective is to fine-tune a small language model on a specific domain and
+build a complete, end-to-end model-to-decision pipeline. The work is organized into the
+following phases.
+
+| Phase | Objective | Status |
+|-------|-----------|--------|
+| **1. Baseline** | Typed decision API served by a general-purpose hosted model via DSPy, establishing the request/response contract and the confidence-reporting behavior. | ✅ Delivered |
+| **2. Dataset construction** | Curate a domain-specific corpus of `(state, questions, answers)` examples, including distillation from larger models and human review, forming the training and evaluation splits. | ⏳ Planned |
+| **3. Evaluation harness** | Define quantitative metrics (type-coercion accuracy, answer agreement, calibration of confidence scores) and automate them as regression gates. | ⏳ Planned |
+| **4. Fine-tuning** | Fine-tune a small open model on the domain dataset, with acceptance criteria derived from the Phase 3 harness. | ⏳ Planned |
+| **5. Self-hosted serving** | Expose the fine-tuned model behind the same OpenAI-compatible gateway interface, so the API remains unchanged for consumers. | ⏳ Planned |
+| **6. End-to-end pipeline** | Productionize the full model-to-decision flow: automated retraining, prompt/program optimization via DSPy teleprompters, monitoring, and rollout. | ⏳ Planned |
+
+Each phase is expected to land incrementally on top of the existing API surface; no phase
+introduces breaking changes to consumers without prior notice.
+
 ## Development
 
 ```bash
